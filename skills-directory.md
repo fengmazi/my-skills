@@ -6,4 +6,4 @@
 
 | 技能 | 说明 |
 |------|------|
-| `yl-frontend-pc-project` | 银铃 PC 前端项目开发规范 |
+| `yl-frontend-pc-project` | 引领 PC 前端项目开发规范 |

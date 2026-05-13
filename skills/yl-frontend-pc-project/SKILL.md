@@ -1,11 +1,11 @@
 ---
 name: yl-frontend-pc-project
-description: 银铃 PC 前端项目开发规范。当修改或新增 PC 端页面、组件、hooks 时使用。
+description: 引领 PC 前端项目开发规范。当修改或新增 PC 端页面、组件、hooks 时使用。
 metadata:
   version: "2026.5.13"
 ---
 
-# 银铃 PC 前端项目
+# 引领 PC 前端项目
 
 ## 技术栈
 
