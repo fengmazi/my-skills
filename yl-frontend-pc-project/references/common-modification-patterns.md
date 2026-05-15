@@ -40,11 +40,13 @@ watch(
   { deep: true }
 )
 
-// ✅ 正确：emit 已足够同步数据，vxe-grid 的 :data 绑定了响应式数组
+// ✅ 正确：注释掉 reloadData 并加警告说明，保留代码备后续参考
 watch(
   () => tableData,
   () => {
     emit('update:modelValue', tableData.value)
+    // 注意：reloadData 会导致横向滚动条跳回开头，不要启用
+    // xTable.value && xTable.value.reloadData(tableData.value)
   },
   { deep: true }
 )
