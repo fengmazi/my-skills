@@ -74,3 +74,21 @@ watch(
 
 效果：勾选某行时，所有 `orderId` 相同的行自动选中，不同 `orderId` 的行自动取消。
 实现原理：SelectDialog 内部 `checkboxChange` 事件中根据 `groupKey` 字段值批量操作复选框。
+
+---
+
+## 多行文本原样显示（textarea 内容保留格式）
+
+当展示多行文本框（textarea）输入的内容时（如审批意见、初步结论等），后端存的是带 `\n` 的原始文本。要让"填什么样，显示什么样"，使用以下 CSS：
+
+```css
+.summary-content {
+  white-space: pre-wrap;    /* 保留换行和空格，超出自动换行 */
+  word-wrap: break-word;    /* 长单词/URL 在边界断行 */
+  overflow-wrap: break-word;
+}
+```
+
+核心属性是 `white-space: pre-wrap`：它保留了 `<pre>` 的空白语义（换行、连续空格不折叠），但同时允许超出容器宽度时自动换行（区别于 `pre` 会在溢出时出现横向滚动条）。
+
+> 使用场景：打印模板、详情弹窗、审批意见展示等需要原样呈现用户输入格式的地方。
