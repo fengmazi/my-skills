@@ -25,6 +25,35 @@ DataTable 的事件名和筛选配置也可能不同（因项目而异），开�
 
 ---
 
+## EditTable 横向滚动条跳回问题
+
+EditTable 的 deep watcher 中**不要调用 `reloadData()`**，否则子表列过多出现横向滚动条时，在靠后的列输入会导致滚动条跳回开头：
+
+```ts
+// ❌ 错误：会导致 scrollLeft 复位
+watch(
+  () => tableData,
+  () => {
+    emit('update:modelValue', tableData.value)
+    xTable.value && xTable.value.reloadData(tableData.value)
+  },
+  { deep: true }
+)
+
+// ✅ 正确：emit 已足够同步数据，vxe-grid 的 :data 绑定了响应式数组
+watch(
+  () => tableData,
+  () => {
+    emit('update:modelValue', tableData.value)
+  },
+  { deep: true }
+)
+```
+
+> 原因：`reloadData()` 会完全重建 grid body，将 `scrollLeft` 复位为 0。旧版 `common-nnw/EditTable.vue` 早已注释掉此行。
+
+---
+
 ## SelectDialog 的 groupKey 特性
 
 当需要在选择弹窗中按某个字段自动分组勾选时（如勾选某行后自动选中同入库单的所有行），在 SelectDialog 上设置 `groupKey`：
