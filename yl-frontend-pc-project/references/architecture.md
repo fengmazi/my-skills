@@ -122,14 +122,41 @@ const { detailVisible, detailData, openDetail } = useDetail()
 
 | 类型 | 存放位置 | 使用方式 | 适用场景 |
 |------|---------|---------|---------|
-| 静态枚举 | `src/enums/index.ts` | 直接 import | 前端固定选项（性别、对齐方式） |
+| 静态枚举 | `src/enums/` 目录下 `*.ts` 文件 | 直接 import enums | 前端固定选项（性别、是否、管控类型等） |
 | 动态枚举 | 服务端维护 | `useEnum(groupNo)` | 业务枚举（单据状态、审批结果） |
 
-```ts
-// 静态枚举
-import { GENDER_OPTIONS } from '@/enums'
+### 静态枚举
 
-// 动态枚举
+在 `src/enums/` 下新建 `xxx.ts`，export default 一个 key-value 对象：
+
+```ts
+// src/enums/controlType.ts
+export default {
+  FC: '厂控',
+  SC: '自控',
+}
+```
+
+`src/enums/index.ts` 会自动 glob 所有 `.ts` 文件，生成两个导出：
+
+| 导出 | 结构 | 用途 |
+|------|------|------|
+| `enums.xxxMap` | `{ FC: '厂控', SC: '自控' }` | 值→标签映射，用于 formatter 或显示转换 |
+| `enums.xxxOption` | `[{ value: 'FC', label: '厂控' }, ...]` | 用于 select/radio 的 options |
+
+**关键用法**：代码值转中文标签用 `enums.xxxMap[value] || value`，安全回退到原值：
+
+```ts
+// 表单 text 字段显示转中文
+data.controlType = enums.controlTypeMap[data.controlType] || data.controlType
+
+// 表格列 formatter
+formatter: ({ cellValue }) => enums.controlTypeMap[cellValue] || cellValue
+```
+
+### 动态枚举
+
+```ts
 const { enums } = useEnum('PO_STATUS')
 // enums.value → [{ label: '待审核', value: '0' }, { label: '已审核', value: '1' }]
 ```
