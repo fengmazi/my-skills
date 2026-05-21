@@ -16,6 +16,22 @@ Vue 3 + Vite 5 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
 - **不可修改后端代码**。需要改后端时先说明理由征求同意。
 - 前端使用 pnpm，Git 提交用 commitizen (`pnpm commit`)
 - 拉取后端代码注意分支，拿不准先问
+- **模板引用使用 `useTemplateRef()`**：Vue 3.5+ 项目获取模板 DOM/组件引用时，使用 `useTemplateRef('refName')` 而非 `ref()`。`useTemplateRef()` 编译时与模板 `ref` 属性绑定，类型更安全。**使用时需先确认项目 Vue 版本 ≥ 3.5**，低于此版本继续用 `ref()`。
+  ```ts
+  // Vue ≥ 3.5
+  const dataTableRef = useTemplateRef('dataTableRef')
+  // Vue < 3.5
+  const dataTableRef = ref()
+  ```
+- **批量操作后清除表格勾选**：DataTable 组件已暴露 `clearCheckbox()` 方法。页面批量操作（如批量送审）成功后，必须调用 `dataTableRef.value?.clearCheckbox()` 清除勾选，避免 vxe-grid 的 `reserve: true` 导致已变更状态的行仍被保留在勾选集合中，再次操作时报错。
+  ```ts
+  // 批量送审成功
+  http.post('/xxx/submit', ids).then((res) => {
+    ElMessage.success(res.message)
+    dataTableRef.value?.clearCheckbox()  // 清除勾选
+    handleTableRefresh()
+  })
+  ```
 
 ## 项目目录
 
