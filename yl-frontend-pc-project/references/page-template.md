@@ -161,3 +161,30 @@ const { handleApprove, handleReject, handleRevoke } = useOperate('/api/module', 
 | `useColumn.ts` | `export function` | `use{Module}Column` |
 | `useCurd.ts` | `export function` | `use{Module}Curd` |
 | `types.ts` | `export interface` | PascalCase |
+
+---
+
+## filterParam 筛选配置类型
+
+表格列的 `filterParam` 支持四种筛选类型：
+
+| type | 渲染控件 | 示例 |
+|------|---------|------|
+| `String` | 文本输入 | `filterParam: { type: String }` |
+| `Number` | 数字输入 | `filterParam: { type: Number }` |
+| `Date` | 日期选择 | `filterParam: { type: Date }` |
+| `Array` | 下拉选择 | `filterParam: { type: Array, options: enums.statusOption }` |
+
+### 常用枚举选项
+
+- `enums.statusOption` — 启用/停用
+- `enums.booleanOption` — 是/否
+- `enums.approveStatusOption` — 审批状态
+- `enums.orderStatusOption` — 订单状态
+
+### 动态选项
+
+```ts
+const column = getColumn('fieldName')
+column.filterParam!.options = res.options
+```

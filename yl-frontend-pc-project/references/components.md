@@ -158,3 +158,67 @@ CRUD 弹窗，配合 `useCurd` 使用，内部渲染 DialogForm。
 ```
 
 **`groupKey` 特性**：按字段自动分组勾选。详见 `references/selectdialog-groupkey.md`。
+
+---
+
+## OptDialog
+
+审批/撤销/弃审等操作的对话框，由 `useOperate` 渲染。无需手动配置，`useOperate` 自动处理。
+
+```ts
+const { handleOpt, OptDialog } = useOperate(handleTableRefresh)
+
+// 打开操作弹窗
+handleOpt({
+  opt: '审批',       // 操作类型
+  rowId: row.id,
+  url: '/api/check',
+  param: { businessId: row.id, taskTypeCode: '1001001' }
+})
+```
+
+```vue
+<OptDialog :dialogAttr="{ width: '800px' }" />
+```
+
+**操作类型与表单内容**：
+
+| 类型 | 表单内容 |
+|-----|---------|
+| 审批 | 审批状态（通过/驳回）、审批意见、附件 |
+| 撤销 | 撤销原因 |
+| 弃审 | 弃审原因 |
+| 红冲 | 红冲类型、附件 |
+
+---
+
+## UploadFile
+
+文件上传组件，用于表单中的附件字段。通常通过表单配置的 `type: 'upload'` 自动渲染，也可直接使用：
+
+```vue
+<UploadFile v-model={formData.accList} allowExt={['pdf', 'doc', 'docx', 'xls', 'xlsx']} />
+```
+
+---
+
+## Timeline
+
+时间轴组件，用于展示审批流程历史：
+
+```ts
+import Timeline from '@/components/common-bt/Timeline.vue'
+// 查看流程时间轴
+handleShowHistory(id, type)
+```
+
+---
+
+## PieChart / BarChart
+
+```ts
+import PieChart from '@/components/common-bt/PieChart.vue'
+import BarChart from '@/components/common-bt/BarChart.vue'
+```
+
+图表组件基于 ECharts 封装，用于仪表盘和统计页面。

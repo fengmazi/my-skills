@@ -86,7 +86,9 @@ const { enums, loading } = useEnum('PURCHASE_STATUS')
 
 **参数**：`groupNo: string` — 枚举分组号
 
-**缓存**：多次调用同一 `groupNo` 会复用缓存，不会重复请求。
+**缓存**：多次调用同一 `groupNo` 会复用缓存，不会重复请求。`useEnum` 内部有缓存层。
+
+**路径差异**：不同项目的导入路径可能不同（`@/hooks-bt/useEnum` vs `@/hooks/useEnum`），以当前项目实际路径为准。
 
 ---
 
@@ -171,13 +173,40 @@ const footerMethod: VxeTablePropTypes.FooterMethod = ({ columns }: { columns: an
 
 ## useDoc
 
-档案数据获取（如供应商、物料、仓库等基础档案）。
+档案数据获取（如部门、人员、费用项目等基础档案）。
 
 ```ts
 const { docMap, docList, loading } = useDoc('SUPPLIER')
 // docMap.value → { '1': '供应商A', '2': '供应商B' }
 // docList.value → [{ id: '1', name: '供应商A' }, ...]
 ```
+
+### 常用档案类型
+
+| type 值 | 说明 | 备注 |
+|--------|-----|------|
+| dept | 部门（带权限） | 使用 `deptStatus` 字段判断停用 |
+| dept-no-per | 部门（不带权限） | 使用 `status` 字段判断停用 |
+| personal | 人员列表 | — |
+| role | 角色列表 | — |
+| group | 权限组 | — |
+| user | 用户下拉 | — |
+| feeItem | 费用项目 | — |
+| relevantDept | 归口部门 | — |
+| model | 模板列表 | — |
+
+### 返回值结构
+
+```ts
+getDoc({ type: 'dept' }).then(res => {
+  // res.options  — 下拉选项（含 disabled 状态）
+  // res.data     — 原始数据
+  // res.map      — id-name 映射
+  // res.filterOptionsList — 扁平选项（用于表格筛选）
+})
+```
+
+**部门停用差异**：`dept` 类型用 `deptStatus === 'S'` 判断停用，`dept-no-per` 类型用 `status === 'S'` 判断停用。如需停用部门在下拉中不可选，使用 `dept` 类型。
 
 ---
 
@@ -198,17 +227,62 @@ const {
 
 ## useOperate
 
-审批操作（审核、弃审、撤销）。
+审批操作（审核、弃审、撤销、红冲）。
 
 ```ts
 const {
   handleApprove,   // (row: T) => Promise<void>
   handleReject,    // (row: T, reason: string) => Promise<void>
   handleRevoke,    // (row: T) => Promise<void>
+  handleOpt,       // (config) => void  通用操作入口
+  OptDialog,       // 操作弹窗组件
 } = useOperate('/api/purchase', onRefresh)
 ```
 
 触发审批后自动弹窗确认、调用 API、刷新列表。
+
+### handleOpt 通用操作入口
+
+```ts
+// 审批
+handleOpt({
+  opt: '审批',
+  rowId: row.id,
+  url: '/api/check',
+  param: { businessId: row.id, taskTypeCode: '1001001' }
+})
+
+// 撤销
+handleOpt({
+  opt: '撤销',
+  rowId: row.id,
+  url: '/api/revocation',
+  param: { businessId: row.id, taskTypeCode: '1001001' }
+})
+
+// 弃审
+handleOpt({
+  opt: '弃审',
+  rowId: row.id,
+  url: '/api/abandon',
+  param: { businessId: row.id, taskTypeCode: '1001001' }
+})
+```
+
+**操作类型**：`审批` / `撤销` / `弃审` / `红冲`。不同类型自动渲染对应的表单（审批意见、撤销原因等）。
+
+### 常见审批状态约束
+
+```ts
+// 审批中可撤销
+disabled={row.approveStatus !== 'submit' && row.approveStatus !== 'check'}
+
+// 审批通过可弃审
+disabled={row.approveStatus !== 'pass'}
+
+// 新建状态可编辑/删除
+disabled={['submit', 'check', 'pass'].includes(row.approveStatus)}
+```
 
 ---
 

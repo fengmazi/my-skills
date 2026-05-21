@@ -7,9 +7,48 @@ metadata:
 
 # 引领 PC 前端项目
 
+## 适用范围
+
+本 Skill 适用于所有**引领 (yinling) PC 前端项目**。判断一个项目是否适用，看是否同时满足：
+
+1. 技术栈：Vue 3 + Element Plus + vxe-table + Pinia + TypeScript
+2. 架构特征：配置驱动 UI（`FormItem[][]` + `Column[]`）、Hook 组合式开发（`useTable → useFormConfig → useCurd → useDetail/useOperate`）
+3. 目录特征：存在 `hooks-bt/`、`hooks/` 或 `components/common-bt/`、`components/common/` 等目录
+
+### 已知适用项目
+
+所有路径相对于工作区根目录（AI 工具打开项目时的根路径）：
+
+| 相对路径 | 项目 | Vue / Vite | 迁移后缀 |
+|---------|------|------------|---------|
+| `budget-admin-container/budget-admin/` | 靖边预结算 | 3.3 / 4 | `-bt`（宝塔迁入） |
+| `budget-bt-admin-container/budget-bt-admin/` | 宝塔预算 | 3.5 / 5 | `-nnw`（南泥湾迁入） |
+| `costcontrol-admin-container/costcontrol-admin/` | 南泥湾成本管控 | 3.3 / 4 | —（`-nnw` 源项目） |
+| `costfeecontrol-admin-container/costfeecontrol-admin/` | 定边成本管控 | 3.5 / 5 | — |
+| `costfeecontrol-zb-admin-container/costfeecontrol-zb-admin/` | 装备制造成本管控 | 3.5 / 5 | — |
+| `vehicle-admin-container/vehicle-admin/` | 吴起车辆管理 | 3.5 / 5 | — |
+| `eam-admin-vue3-container/eam-admin-vue3/` | 南泥湾资产管理 | 3.5 / 2 | 混合架构（hooks + composables） |
+
+> **版本差异提醒**：Vue 3.3 / Vite 4 项目（靖边、南泥湾成本管控）不能用 `useTemplateRef()` 等 3.5+ API。开发前先确认 `package.json` 中的版本。
+
+### 迁移后缀说明
+
+模块在项目间迁移时，因与原项目代码耦合度高，连带公共代码一起迁入，用后缀区分来源。**迁移链**：南泥湾 → 宝塔 (`-nnw`) → 靖边 (`-bt`)。
+
+| 后缀 | 来源项目 | 见于项目 | 示例目录 |
+|------|---------|---------|---------|
+| `-nnw` | 南泥湾成本管控 | 宝塔预算 | `hooks-nnw/`、`components/common-nnw/` |
+| `-bt` | 宝塔预算 | 靖边预结算 | `hooks-bt/`、`components/common-bt/`、`enums-bt/` |
+
+**注册顺序**：全局注册时先注册迁入版本再注册原始版本，保证覆盖。如靖边项目 `main.ts` 中先注册 `common-bt` 组件，再注册 `common` 组件。
+
+### 扩展性
+
+目前覆盖**引领**体系项目。如果后续接手其他公司的同类项目（不同 Gogs 组织、不同技术体系），应在 Skill 中新增对应 section，或在项目级 `CLAUDE.md` 中补充差异点。
+
 ## 技术栈
 
-Vue 3 + Vite 5 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
+Vue 3 + Vite 5 / 4 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
 
 ## 约束
 
@@ -35,7 +74,17 @@ Vue 3 + Vite 5 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
 
 ## 项目目录
 
-所有项目在 `D:\resources\code\xayl\` 下。每个项目通常包含前端 PC、前端 APP（可选）、后端、数据库脚本。
+每个项目通常包含：
+
+```
+<project>-container/        # 仓库根目录
+├── <project>-admin/       # 前端 PC
+├── <project>-app/         # 前端 APP（可选）
+├── yinling-<project>/     # 后端（不修改）
+└── DB/                    # 数据库脚本
+```
+
+> 使用相对路径引用项目，方便不同开发者/AI 工具共享。
 
 ## 启动项与打包配置
 
@@ -80,9 +129,14 @@ Vue 3 + Vite 5 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
 | 文档 | 内容 |
 |------|------|
 | `references/architecture.md` | 核心架构原则：配置驱动 UI、Hook 组合式开发、JSX 渲染、枚举双轨制 |
-| `references/components.md` | 核心组件 API：DataTable、Form、DialogForm、CurdDialog、EditTable、SelectDialog 等 |
-| `references/hooks.md` | 核心 Hooks 用法：useTable、useCurd、useFormConfig、useEnum、useDoc 等 |
-| `references/page-template.md` | 页面开发模板：列表页脚手架、审批页附加层、文件命名约定 |
+| `references/components.md` | 核心组件 API：DataTable、Form、DialogForm、CurdDialog、EditTable、SelectDialog、OptDialog 等 |
+| `references/hooks.md` | 核心 Hooks 用法：useTable、useCurd、useFormConfig、useEnum、useDoc、useOperate 等 |
+| `references/page-template.md` | 页面开发模板：列表页脚手架、审批页附加层、文件命名约定、filterParam 类型 |
+| `references/api-patterns.md` | API 请求模式：分页参数格式、操作符表、CRUD/审批/批量/导出惯用写法 |
+| `references/auth.md` | 权限与状态：checkAuth 权限码规则、useAppStore、路由守卫模式 |
+| `references/enums-detail.md` | 枚举体系：静态枚举自动加载（Map/Option/tagTypeMap）、动态枚举、使用惯式 |
+| `references/form-items.md` | 表单配置详解：完整 FormItem type 列表、各类型常用 attrs、动态配置 |
+| `references/utilities.md` | 工具函数：treeDataToKeyValue、calculateFormula、downloadFile、formatMoney 等 |
 | `references/dual-system.md` | 双系统共存：common 与 common-xxx 的目录结构、对照表、注册顺序 |
 | `references/edittable-scroll.md` | EditTable 横向滚动条跳回问题的原因与修复 |
 | `references/selectdialog-groupkey.md` | SelectDialog 按字段分组勾选（groupKey）的用法与实现 |
