@@ -142,3 +142,4 @@ Vue 3 + Vite 5 / 4 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
 | `references/selectdialog-groupkey.md` | SelectDialog 按字段分组勾选（groupKey）的用法与实现 |
 | `references/textarea-display.md` | 多行文本原样显示（white-space: pre-wrap）的使用场景 |
 | `references/startup-config.md` | 启动项配置模板：scripts、.env 文件、vite.config.ts / vue.config.js |
+| `references/print-module.md` | 打印模块架构：目录结构、三段式模板、分页流程、新增单据步骤 |
