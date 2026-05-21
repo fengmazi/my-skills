@@ -90,6 +90,85 @@ const { enums, loading } = useEnum('PURCHASE_STATUS')
 
 ---
 
+## 合计行（useTable 的 sum 与 footerMethod）
+
+`useTable` 内置了默认的 `footerMethod`，但不推荐直接使用。**合计行必须在本页面覆盖重写**，不应依赖 useTable 的默认实现。
+
+### 原因
+
+- 默认 footerMethod 统一 `toFixed(2)`，无法适配不同精度需求（如金额需 4 位 + 千分位 `formatMoney`）
+- 默认 "合计" 固定在第 0 列，不能跟随是否有选择列动态调整位置
+
+### 规范
+
+1. **合计优先在页面覆盖重写**：从 `useTable` 解构 `sum`，在页面内写 `footerMethod`，不要使用 useTable 默认导出的 `footerMethod`
+
+2. **"合计"位置规则**：
+   - 列表**有选择列（checkbox）** → "合计"放在第 **2** 列（index 1，即选择列后面一列）
+   - 列表**无选择列**（全是展示列） → "合计"放在第 **1** 列（index 0）
+
+3. **格式化与列定义保持一致**：footerMethod 中各字段的格式化方式应与该列 `formatter` 一致
+
+### 示例
+
+```tsx
+// 从 useTable 解构 sum
+const { tableData, total, pageNo, pageSize, loading, queryList, sum, handleTableQuery } =
+  useTable('/materialOutbound/query')
+
+// 有选择列的 detailColumns — "合计"在 index 1
+const { columns: detailColumns } = useColumn([
+  { type: 'checkbox', width: 50 },          // index 0
+  { field: 'approveStatus', title: '审批状态' }, // index 1 ← "合计"放这里
+  { field: 'amount', title: '数量', ... },
+  { field: 'taxMoney', title: '金额', ... },
+])
+
+const footerMethod: VxeTablePropTypes.FooterMethod = ({ columns }: { columns: any[] }) => {
+  return [
+    columns.map((col: any, index: number) => {
+      if (index === 1) return '合计'  // 有选择列，放第二列
+      if (['amount'].includes(col.field) && sum.value[col.field] != null) {
+        return Number(sum.value[col.field]).toFixed(4)
+      }
+      if (['taxMoney'].includes(col.field) && sum.value[col.field] != null) {
+        return formatMoney(sum.value[col.field], 4)
+      }
+      return ''
+    }),
+  ]
+}
+```
+
+```tsx
+// 无选择列的 detailColumns — "合计"在 index 0
+const { columns: detailColumns } = useColumn([
+  { field: 'approveStatus', title: '审批状态' },  // index 0 ← "合计"放这里
+  { field: 'amount', title: '数量', ... },
+])
+
+const footerMethod: VxeTablePropTypes.FooterMethod = ({ columns }: { columns: any[] }) => {
+  return [
+    columns.map((col: any, index: number) => {
+      if (index === 0) return '合计'  // 无选择列，放第一列
+      ...
+    }),
+  ]
+}
+```
+
+### 模板配置
+
+```html
+<DataTable
+  :show-footer="listType === 'detail'"
+  :footer-method="listType === 'detail' ? footerMethod : undefined"
+  ...
+/>
+```
+
+---
+
 ## useDoc
 
 档案数据获取（如供应商、物料、仓库等基础档案）。
