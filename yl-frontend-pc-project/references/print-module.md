@@ -88,6 +88,22 @@ export const genTable = (orderColumns: any[], detail: Ref<any>) => {
 
 各模板的 `preprocess` 中访问 `detailList` 使用可选链 `?.`。
 
+### big.js 运算空值保护
+
+`preprocess` 中使用 `.add()` `.mul()` `.sub()` `.div()` 等 big.js 拓展方法时，**所有参与运算的值都必须做空值兜底**，否则会抛出 `[big.js] Invalid number`：
+
+```ts
+// ❌ 错误：amount/adjustMoney 可能为 null/undefined
+item.reMoney = item.money.mul(item.amount)
+item.sMoney = item.money.mul(item.amount).add(item.adjustMoney)
+
+// ✅ 正确：所有值使用 ?? 0 兜底
+item.reMoney = (item.perPrice ?? 0).mul(item.amount ?? 0)
+item.sMoney = (item.perPrice ?? 0).mul(item.amount ?? 0).add(item.adjustMoney ?? 0)
+```
+
+**注意**：不要依赖 `item.money = item.perPrice` 中间赋值后再运算，因为 `item.perPrice` 本身也可能为 `null`，应直接用 `item.perPrice ?? 0` 作为运算起点。
+
 ## 向后兼容
 
 拆分后保留原始文件作为代理：
