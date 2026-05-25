@@ -59,6 +59,8 @@ Vue 3 + Vite 5 / 4 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
   ```ts
   // Vue ≥ 3.5
   const dataTableRef = useTemplateRef('dataTableRef')
+  // Options API 组件需加泛型暴露 expose 方法，否则 TS 推断不到
+  const dataTableRef = useTemplateRef<{ clearCheckbox: () => void }>('dataTableRef')
   // Vue < 3.5
   const dataTableRef = ref()
   ```
