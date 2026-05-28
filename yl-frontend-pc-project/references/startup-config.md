@@ -206,23 +206,164 @@ module.exports = {
 
 ## deploy.js（部署到测试服务器）
 
+通过 SSH + SCP 部署 `dist/` 到测试服务器，包含备份、清理、上传、本地清理完整流程。
+
+### 完整模板
+
 ```js
-// 通过 SSH + SCP 部署 dist/ 到测试服务器
-// 1. 备份远程现有 dist/ → dist_YYYYMMDDHHmmss.tar.gz
-// 2. 保留最近 2 份备份，删除旧的
-// 3. SCP 上传本地 dist/ 到远程
+Promise.all([import('ora'), import('chalk'), import('node-scp'), import('ssh2'), import('fs'), import('./serverConfig.mjs')]).then(
+  ([oraModule, chalkModule, scpClientModule, ClientModule, fsModule, serverConfigModule]) => {
+    const ora = oraModule.default
+    const chalk = chalkModule.default
+    const scpClient = scpClientModule.default
+    const Client = ClientModule.Client
+    const serverConfig = serverConfigModule.default
+
+    const conn = new Client()
+    const connect = () => {
+      return new Promise(resolve => {
+        conn.on('ready', resolve).connect(serverConfig)
+      })
+    }
+    const connExec = cmd => {
+      console.log('excete -> ' + cmd)
+      return new Promise((resolve, reject) => {
+        conn.exec(cmd, (err, stream) => {
+          if (err) reject(err)
+          stream
+            .on('close', () => {
+              console.log('close -> ' + cmd)
+              resolve()
+            })
+            .on('data', data => {
+              data && resolve(data)
+            })
+            .stderr.on('data', data => {
+              reject(data)
+            })
+        })
+      })
+    }
+
+    const basePath = '/home2/test_envs/<项目名>/frontends/'
+
+    connect()
+      .then(() => {
+        console.log(chalk.blue('检查备份...'))
+        return connExec(`find ${basePath} -maxdepth 1 -name "dist*.tar.gz"`)
+      })
+      .then(res => {
+        if (res) {
+          const backFiles = res
+            .toString()
+            .split('\n')
+            .filter(item => item.startsWith(`${basePath}dist`))
+            .sort((a, b) => {
+              const getTime = file => new Date(file.match(/dist-(.+)\.tar\.gz/)[1].replace(/-/g, '/')).getTime()
+              return getTime(b) - getTime(a)
+            })
+          if (backFiles.length > 2) {
+            console.log(chalk.blue('备份超过两个，正在清理多余备份...'))
+            const filesToDelete = backFiles.slice(2)
+            const deletePromises = filesToDelete.map(file => connExec(`rm -f ${file}`))
+            return Promise.all(deletePromises).then(() => {
+              console.log(chalk.green('多余备份已清理'))
+            })
+          }
+        } else {
+          console.log(chalk.blue('无多余备份'))
+          return Promise.resolve()
+        }
+      })
+      .then(() => {
+        console.log(chalk.blue('检查dist目录是否存在...'))
+        return connExec(`[ -d ${basePath}dist ] && echo 'exists' || echo 'not-exist'`).then(res => {
+          if (res && res.toString().includes('exists')) {
+            console.log(chalk.blue('开始备份...'))
+            const now = new Date()
+            const filename = `dist-${now
+              .toLocaleString()
+              .replace(/\//g, '-')
+              .replace(' 上午', 'AM')
+              .replace(' 下午', 'PM')
+              .replace(' ', '-')}`
+            return connExec(`tar -zcPf ${basePath}${filename}.tar.gz ${basePath}dist`)
+          } else {
+            console.log(chalk.yellow('dist目录不存在，跳过备份'))
+            return Promise.resolve()
+          }
+        })
+      })
+      .then(() => {
+        console.log(chalk.green('备份完成'))
+        console.log(chalk.blue('删除远程旧文件...'))
+        return connExec(`rm -rf ${basePath}dist`)
+      })
+      .then(() => {
+        console.log(chalk.green('远程删除完成'))
+        const spinner = ora('正在发布到服务器...')
+        spinner.start()
+        scpClient.Client(serverConfig).then(client => {
+          client
+            .uploadDir('./dist', `${basePath}dist`)
+            .then(response => {
+              spinner.stop()
+              client.close()
+              console.log(chalk.green('成功发布到服务器!'))
+              console.log(chalk.blue('清理本地dist目录...'))
+              fsModule.rmSync('./dist', { recursive: true, force: true })
+              console.log(chalk.green('本地dist目录已删除'))
+            })
+            .catch(error => {
+              console.log(chalk.red('发布失败'))
+            })
+        })
+      })
+      .catch(err => {
+        console.error(chalk.red(err))
+      })
+      .finally(() => {
+        conn.end()
+      })
+  }
+)
 ```
 
-- 服务器配置放在 `serverConfig.mjs`（gitignore）：
-  ```js
-  export default {
-    host: '192.168.1.2',
-    port: 27645,
-    username: 'alios',
-    password: 'xxx',
+### 流程说明
+
+| 步骤 | 操作 | 说明 |
+|------|------|------|
+| 1 | 检查并清理多余备份 | SSH 连接服务器，保留最近 2 份 dist 备份 |
+| 2 | 备份现有 dist | 将远程 dist/ 打包为 dist-时间戳.tar.gz |
+| 3 | 删除远程 dist | `rm -rf` 清理远程旧文件 |
+| 4 | SCP 上传 | 上传本地 dist/ 到服务器 |
+| 5 | 清理本地 dist | `fs.rmSync` 删除本地 dist 目录，释放磁盘空间 |
+
+### 依赖
+
+```json
+{
+  "devDependencies": {
+    "chalk": "^5.x",
+    "node-scp": "^1.x",
+    "ora": "^8.x",
+    "ssh2": "^1.x"
   }
-  ```
-- 远程路径通常为 `/home2/test_envs/<项目名>/frontends/`
+}
+```
+
+### serverConfig.mjs（gitignore）
+
+```js
+export default {
+  host: '192.168.1.2',
+  port: 27645,
+  username: 'alios',
+  password: 'xxx',
+}
+```
+
+远程路径通常为 `/home2/test_envs/<项目名>/frontends/`，按实际项目替换 `<项目名>`。
 
 ## zip.cjs（构建后打包）
 
