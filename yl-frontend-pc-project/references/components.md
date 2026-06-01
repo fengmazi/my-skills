@@ -25,6 +25,40 @@
 
 **注意**：项目可能存在 `DataTable.vue` 的双系统版本（`common/DataTable.vue` vs `common-nnw/DataTable.vue`），事件名和筛选配置可能不同，参考既有页面写法。
 
+### 树形表格展开/收起所有
+
+当 DataTable 配置 `type="tree"` 时，可通过模板 ref 访问内部 vxe-grid 实例调用 `setAllTreeExpand`：
+
+```vue
+<script lang="tsx" setup>
+const xTable = ref()
+
+const toolbarBtns = () => [
+  // ... 其他按钮
+  <el-button type="primary" size="small" onClick={() => xTable.value?.$refs.xTable.setAllTreeExpand(true)}>
+    展开所有
+  </el-button>,
+  <el-button type="primary" size="small" onClick={() => xTable.value?.$refs.xTable.setAllTreeExpand(false)}>
+    收起所有
+  </el-button>,
+]
+</script>
+
+<template>
+  <DataTable
+    ref="xTable"
+    type="tree"
+    :columns="columns"
+    :tableData="tableData"
+    ...
+  />
+</template>
+```
+
+**原理**：`ref="xTable"` 获取 DataTable 组件实例，其内部的 `$refs.xTable` 是 vxe-grid 组件实例，`setAllTreeExpand(true/false)` 是 vxe-grid 的原生方法。
+
+**常见错误**：不要用 `document.querySelector('.vxe-grid-container')` 获取 DOM 元素来调用此方法 — DOM 元素上不存在 `setAllTreeExpand`，必须通过 Vue 组件实例访问。
+
 ---
 
 ## Form + FormItem
