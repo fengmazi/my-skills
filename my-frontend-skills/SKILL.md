@@ -2,7 +2,7 @@
 name: my-frontend-skills
 description: 个人前端开发笔记。包含 pnpm/npm 问题、环境配置、常用命令等踩坑记录。
 metadata:
-  version: "2026.5.15"
+  version: "2026.6.1"
 ---
 
 # 个人前端开发笔记
@@ -112,3 +112,33 @@ spring:
       port: 27017
       database: 你的数据库名
 ```
+
+## 项目部署
+
+### 定边成本管控 (costfeecontrol-admin)
+
+**部署脚本**：`deploy.js`，配置在同目录 `serverConfig.mjs`。
+
+**部署流程**：
+1. `pnpm build` — 编译打包，产物在 `./dist`
+2. SSH 连接到服务器，备份旧 `dist`（保留最近 2 个备份）
+3. 删除服务器旧 `dist`
+4. SCP 上传本地 `./dist` 到服务器
+
+**常用命令**：
+
+```bash
+# 部署到测试服务器
+pnpm deploy
+
+# 仅打包（生产模式），生成 dist.zip 并打开文件位置
+pnpm build-prod
+
+# 本地开发
+pnpm dev
+
+# 在线测试环境
+pnpm dev:onlineTest
+```
+
+**打包后清理**：`build-prod` 和 `deploy` 完成后会自动删除本地 `dist` 目录，避免残留旧构建产物。
