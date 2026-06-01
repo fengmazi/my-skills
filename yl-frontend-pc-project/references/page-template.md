@@ -188,3 +188,25 @@ const { handleApprove, handleReject, handleRevoke } = useOperate('/api/module', 
 const column = getColumn('fieldName')
 column.filterParam!.options = res.options
 ```
+
+---
+
+## 常用列配置
+
+### 操作人 / 操作时间
+
+列表页展示操作人和操作时间时，字段名和配置如下：
+
+```ts
+{ field: 'optUserName', title: '操作人', filterParam: { type: String } },
+{
+  field: 'optDate',
+  title: '操作时间',
+  width: 215,
+  filterParam: { type: Date, attrs: { valueFormat: 'x' } },
+  formatter: ({ cellValue }) => formatTime(cellValue, 'yyyy年MM月dd日 hh:mm'),
+},
+```
+
+- `optUserName` — 操作人名称（后端统一字段）
+- `optDate` — 操作时间，int64 时间戳，列宽优先用 **215**
