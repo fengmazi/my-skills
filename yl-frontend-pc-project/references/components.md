@@ -31,7 +31,9 @@
 
 ```vue
 <script lang="tsx" setup>
-const xTable = ref()
+import { useTemplateRef } from 'vue'
+
+const xTable = useTemplateRef('xTable')
 
 const toolbarBtns = () => [
   // ... 其他按钮
@@ -56,6 +58,8 @@ const toolbarBtns = () => [
 ```
 
 **原理**：`ref="xTable"` 获取 DataTable 组件实例，其内部的 `$refs.xTable` 是 vxe-grid 组件实例，`setAllTreeExpand(true/false)` 是 vxe-grid 的原生方法。
+
+**注意**：Vue 3.5+ 项目使用 `useTemplateRef('refName')` 而非 `ref()` 获取模板引用。Vue < 3.5 的项目继续使用 `ref()`。
 
 **常见错误**：不要用 `document.querySelector('.vxe-grid-container')` 获取 DOM 元素来调用此方法 — DOM 元素上不存在 `setAllTreeExpand`，必须通过 Vue 组件实例访问。
 
