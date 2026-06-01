@@ -59,3 +59,56 @@ pnpm audit                          # 安全审计
 pnpm commit                         # commitizen 提交（本仓库约定）
 pnpm store path                     # 查看 store 目录
 ```
+
+### Windows 多 Java 版本切换
+
+项目可能需要不同 Java 版本（如 Java 8 用于旧项目，Java 17 用于新项目）。
+
+**切换方法（PowerShell）**：
+```powershell
+# 切换到 Java 17
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.8.101-hotspot"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+
+# 切换到 Java 8
+$env:JAVA_HOME = "C:\Program Files\Java\jdk1.8.0_151"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+```
+
+**验证**：
+```powershell
+java -version
+javac -version
+$env:JAVA_HOME
+```
+
+**永久设置**（管理员权限）：
+```powershell
+[System.Environment]::SetEnvironmentVariable("JAVA_HOME", "你的JDK路径", "Machine")
+```
+
+> 注意：JRE 只有 `java` 没有 `javac`，编译需要 JDK。报错 `No compiler is provided in this environment` 说明当前用的是 JRE 而非 JDK。
+
+### MongoDB 本地环境快速搭建
+
+项目依赖 MongoDB 但远程连不上时，用 Docker 一行搞定：
+
+```bash
+docker run -d -p 27017:27017 --name mongodb-local mongo:latest
+```
+
+验证：
+```bash
+docker ps | grep mongodb-local
+mongosh    # 连接测试，看到 shell 提示符即可
+```
+
+配置文件改为本地连接：
+```yaml
+spring:
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: 你的数据库名
+```
