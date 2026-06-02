@@ -1,5 +1,64 @@
 # 页面开发模板
 
+## Vue 文件书写顺序
+
+所有 `.vue` 文件必须按以下顺序组织：
+
+```
+<script> → <template> → <style>
+```
+
+**Why:** script 先定义组件的所有逻辑（props、data、computed、methods），template 再消费，style 最后做样式增强。阅读时先理解组件行为，再看结构和样式，层次分明。
+
+```vue
+<script lang="tsx" setup>
+// 1. 所有逻辑在此
+import { ref } from 'vue'
+
+const count = ref(0)
+</script>
+
+<template>
+  <!-- 2. 模板渲染 -->
+  <div>{{ count }}</div>
+</template>
+
+<style lang="scss" scoped>
+/* 3. 样式 */
+</style>
+```
+
+> 不得使用 `<template>` 在前的写法。
+
+## 页面级组件目录规范
+
+页面级组件（`src/views/` 下的路由页面）必须使用文件夹包裹 `index.vue`，禁止直接放置 `.vue` 文件：
+
+```
+# 正确
+src/views/archive/docMaterialCategory/
+└── index.vue
+
+# 错误
+src/views/archive/docMaterialCategory.vue
+```
+
+**Why:** 页面后续通常需要拆分 hooks、types、子组件等，提前预留文件夹避免日后迁移。即使页面当前只有一个文件，也用文件夹 + `index.vue`。
+
+子组件、hooks、types 均在文件夹内就近存放：
+
+```
+src/views/archive/docMaterialCategory/
+├── index.vue          # 页面主文件
+├── useTable.ts        # 表格数据逻辑
+├── useFormConfig.ts   # 搜索表单配置
+├── useColumn.ts       # 表格列配置
+├── useCurd.ts         # CRUD 操作
+└── types.ts           # 类型定义
+```
+
+---
+
 ## 列表页标准模板
 
 新增业务页面时按以下结构搭建：
@@ -17,6 +76,18 @@ src/views/{module}/
 ### index.vue
 
 ```vue
+<script setup lang="ts">
+import { useTable } from './useTable'
+import { useFormConfig } from './useFormConfig'
+import { useColumn } from './useColumn'
+import { useCurd } from './useCurd'
+
+const { tableData, loading, pagination, onSearch, onPageChange } = useTable()
+const { formConfig, queryParams } = useFormConfig()
+const { columns } = useColumn()
+const { curdState, handleEdit, handleDelete, handleCurdSubmit } = useCurd(onSearch)
+</script>
+
 <template>
   <div class="page-container">
     <!-- 搜索区域 -->
@@ -46,18 +117,6 @@ src/views/{module}/
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import { useTable } from './useTable'
-import { useFormConfig } from './useFormConfig'
-import { useColumn } from './useColumn'
-import { useCurd } from './useCurd'
-
-const { tableData, loading, pagination, onSearch, onPageChange } = useTable()
-const { formConfig, queryParams } = useFormConfig()
-const { columns } = useColumn()
-const { curdState, handleEdit, handleDelete, handleCurdSubmit } = useCurd(onSearch)
-</script>
 ```
 
 ### useTable.ts

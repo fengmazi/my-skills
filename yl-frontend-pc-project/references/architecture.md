@@ -85,35 +85,170 @@ const { detailVisible, detailData, openDetail } = useDetail()
 
 ---
 
-## 3. JSX 渲染复杂区域
+## 3. JSX / TSX 渲染
 
-模板保持简洁，toolbar 按钮、操作列、格式化单元格用 TSX：
+项目中有三种 TSX 使用模式，按场景选择：
+
+### 模式对比
+
+| 模式 | 文件类型 | 定义方式 | 有无模板 | 有无 scoped 样式 | 适用场景 |
+|------|---------|---------|---------|-----------------|---------|
+| A. 纯渲染组件 | `.vue` | `defineComponent` + render 函数 | 无 | 有 | 通用 UI 组件，需样式隔离 |
+| B. 页面组件 | `.vue` | `<script setup>` + `<template>` | 有 | 有 | 页面/业务组件，TSX 仅用于动态配置 |
+| C. Hook 内组件 | `.tsx` | `function Component()` 在 hook 内 | 无 | 无 | 弹窗组件，与 hook 状态紧密耦合 |
+
+---
+
+### 模式 A：`.vue` + `defineComponent` + render 函数
+
+纯渲染组件，无 `<template>`，全部用 TSX render 函数输出。用于 `components/common/` 下的通用 UI 组件。
+
+```vue
+<script lang="tsx">
+import { defineComponent } from 'vue'
+import type { PropType } from 'vue'
+
+export default defineComponent({
+  props: {
+    list: {
+      required: true,
+      type: Array as PropType<any[]>,
+    },
+  },
+  setup(props) {
+    return () => (
+      <ul class="attchments">
+        {props.list.length > 0
+          ? props.list.map((item: any) => (
+              <li onClick={() => handleClick(item)}>{item.name}</li>
+            ))
+          : '无数据'}
+      </ul>
+    )
+  },
+})
+</script>
+
+<style lang="scss" scoped>
+.attchments { /* ... */ }
+</style>
+```
+
+> 代表文件：`Attchments.vue`、`Timeline.vue`、`Detail.vue`、`DataTable.vue` 等 39 个文件。
+
+---
+
+### 模式 B：`.vue` + `<script lang="tsx" setup>` + `<template>`
+
+页面级/业务组件的主流写法。setup 中用 TSX 编写复杂配置（列配置、表单配置），模板保持简洁。
+
+```vue
+<script lang="tsx" setup>
+import { ref } from 'vue'
+
+const columns = ref<Column[]>([
+  { type: 'checkbox', width: 50 },
+  {
+    field: 'categoryName',
+    title: '分类名称',
+    minWidth: 200,
+    filterParam: { type: String },
+    treeNode: true,
+  },
+  {
+    field: 'status',
+    title: '状态',
+    formatter: ({ cellValue }) => <el-tag>{statusMap[cellValue]}</el-tag>,
+  },
+])
+</script>
+
+<template>
+  <Container>
+    <DataTable :columns="columns" :data="tableData" />
+  </Container>
+</template>
+
+<style lang="scss" scoped>
+.page-container { /* ... */ }
+</style>
+```
+
+> 代表文件：`docMaterialCategory.vue`、大部分 `views/` 下的业务页面。
+
+---
+
+### 模式 C：`.tsx` 纯文件 + hook 内定义组件函数
+
+组件函数定义在 hook 闭包内，直接访问 hook 响应式状态，无需 props 传递。用于审批弹窗、详情弹窗等与业务逻辑紧密耦合的场景。
 
 ```tsx
-// 操作列
-{
-  title: '操作',
-  width: 180,
-  slots: { default: 'action' },
+// useOperate.tsx
+import { ref, reactive } from 'vue'
+
+export default function useOperate(refreshTable?: Function) {
+  const dialogVisible = ref(false)
+  const formData = reactive<OptFormData>({})
+
+  const handleConfirm = () => {
+    http.post(url, formData).then(() => {
+      dialogVisible.value = false
+      refreshTable?.()
+    })
+  }
+
+  // 组件函数：直接访问闭包中的 dialogVisible、formData
+  function OptDialog(props: DialogProps) {
+    return (
+      <el-dialog v-model={dialogVisible.value} title="审批" {...props.dialogAttr}>
+        {{
+          default: () => <Form formConfig={formConfig.value} formData={formData} />,
+          footer: () => (
+            <span>
+              <el-button onClick={() => (dialogVisible.value = false)}>取消</el-button>
+              <el-button type="primary" onClick={handleConfirm}>确定</el-button>
+            </span>
+          ),
+        }}
+      </el-dialog>
+    )
+  }
+
+  return { handleOpt, OptDialog, OptPageDialog }
 }
 ```
 
+页面中使用：
+
 ```vue
-<!-- 模板中 -->
-<template #action="{ row }">
-  <el-button link type="primary" @click="handleEdit(row)">修改</el-button>
-  <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+<script setup lang="tsx">
+const { handleOpt, OptDialog } = useOperate(onSearch)
+</script>
+
+<template>
+  <div>
+    <el-button @click="handleOpt({ opt: '审批', rowId: row.id, url: '...', param: {...} })">
+      审批
+    </el-button>
+    <OptDialog />
+  </div>
 </template>
 ```
 
-复杂格式化用 `formatter`：
+> 代表文件：`hooks/useOperate.tsx`、`hooks/useCurd.tsx`、`hooks/useDetail.tsx`、`hooks-nnw/useOperate.tsx` 等 13 个文件。
 
-```ts
-{
-  field: 'status',
-  title: '状态',
-  formatter: ({ row }) => <el-tag type={statusMap[row.status]}>{statusMap[row.status]}</el-tag>,
-}
+---
+
+### 选择决策
+
+```
+需要 scoped 样式？
+├─ 是 → 用 .vue 文件
+│      ├─ 纯渲染、无模板逻辑 → 模式 A (defineComponent + render)
+│      └─ 有模板结构、TSX 只做动态配置 → 模式 B (script setup + template)
+└─ 否 → 组件与 hook 状态耦合？
+       ├─ 是 → 模式 C (.tsx hook 内定义)
+       └─ 否 → 模式 B（最通用）
 ```
 
 ---

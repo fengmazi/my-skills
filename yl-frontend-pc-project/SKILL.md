@@ -2,7 +2,7 @@
 name: yl-frontend-pc-project
 description: 引领 PC 前端项目开发规范。当修改或新增 PC 端页面、组件、hooks、启动配置时使用。
 metadata:
-  version: "2026.5.21"
+  version: "2026.6.2"
 ---
 
 # 引领 PC 前端项目
