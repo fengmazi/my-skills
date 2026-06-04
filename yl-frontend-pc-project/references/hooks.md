@@ -5,27 +5,91 @@
 分页表格数据管理。封装了请求、分页、排序、筛选状态。
 
 ```ts
+interface UseTableConfig {
+  url: Ref<string>           // API 路径（响应式）
+  method?: 'POST' | 'GET'    // 请求方式，默认 POST
+  usePage?: boolean          // 是否分页，默认 true
+  querys?: QueryDO[]         // 初始筛选条件
+  size?: number              // 默认每页条数，默认 20
+  params?: Reactive<Record<string, any>>   // 额外请求参数（筛选条件等）
+}
+
 const {
-  tableData,     // Ref<T[]>         表格数据
-  loading,       // Ref<boolean>     加载状态
-  pagination,    // Reactive         分页 { currentPage, pageSize, total }
-  onSearch,      // () => void       触发查询（会重置到第一页）
-  onRefresh,     // () => void       保持当前页刷新
-  onPageChange,  // (page) => void   翻页
-  onSortChange,  // (sort) => void   排序变更
-} = useTable('/api/list', queryParams)
+  tableData,        // Ref<T[]>            表格数据
+  total,            // Ref<number>         总条数
+  pageNo,           // Ref<number>         当前页码
+  pageSize,         // Ref<number>         每页条数
+  loading,          // Ref<boolean>        加载状态
+  sum,              // Ref<Record<string, any>>  合计行数据
+  queryList,        // Ref<QueryDO[]>      当前筛选条件
+  sortList,         // Ref<SortDO[]>       当前排序
+  handleTableRefresh,     // () => Promise   刷新（保持当前状态）
+  handleQueryPage,        // (currentPage, size, querys, sorts) => Promise  分页/筛选/排序触发
+  buildFooterMethod,      // (columns) => VxeTablePropTypes.FooterMethod    生成合计行方法
+} = useTable(config)
 ```
 
-**参数**：
-- `url: string` — 查询 API 路径
-- `queryParams: Ref<Record<string, any>>` — 查询条件（响应式）
-- `options?: { immediate?: boolean, pageSize?: number }` — 可选配置
+**请求体格式**：`useTable` 自动将请求拼装为 `{ querys, sorts, current, pageSize, ...params }`。当 `usePage: false` 时不传分页参数，返回 `res.data` 直接作为 `tableData`（不分页数组）。
 
-**典型用法**：
+**典型用法（分页列表）**：
 
 ```ts
-const queryParams = ref({ billNo: '', date: '' })
-const { tableData, loading, pagination, onSearch } = useTable('/api/purchase/list', queryParams)
+// 基础用法：只传 url，DataTable 点击分页自动调用 handleQueryPage
+const { tableData, total, pageNo, pageSize, loading, handleQueryPage } = useTable({
+  url: ref('/checkAcceptOrder/queryApplication'),
+})
+```
+
+**典型用法（带筛选参数）**：
+
+```ts
+const queryParams = reactive<Record<string, any>>({})
+
+const { tableData, total, pageNo, pageSize, loading, handleQueryPage: originalHandleQueryPage, sum } = useTable({
+  url: ref('/report/supplierSummary'),
+  params: queryParams,
+})
+
+// 筛选条件变化时同步到 queryParams
+watch([startTime, endTime], () => {
+  queryParams.startTime = startTime.value
+  queryParams.endTime = endTime.value
+}, { immediate: true })
+
+// 包装一层校验
+const handleQueryPage = (currentPage: number, size: number, querys: QueryDO[], sorts: SortDO[]) => {
+  if (!validateQuery()) return
+  originalHandleQueryPage(currentPage, size, querys, sorts)
+}
+```
+
+**模板绑定**：
+
+```html
+<DataTable
+  :columns="columns"
+  :tableData="tableData"
+  :total="total"
+  :currentPage="pageNo"
+  :pageSize="pageSize"
+  :loading="loading"
+  @tableRefresh="handleQueryPage"
+/>
+```
+
+**分页参数说明**：`useTable` 内部用 `current` + `pageSize` 传给后端，与 DataTable 的 `currentPage` / `pageSize` props 配合。不要在 `params` 里手动加 `pageNo` 或 `pageSize`。
+
+**不分页用法**（如动态报表返回全量数据）：
+
+```ts
+const { tableData, loading, handleQueryPage, sum } = useTable({
+  url: ref('/report/deptMaterialOutSummary'),
+  params,
+  usePage: false,
+})
+
+// usePage: false 时，handleQueryPage 不会传 current/pageSize
+// 返回的 res.data 直接赋值给 tableData（数组）
 ```
 
 ---

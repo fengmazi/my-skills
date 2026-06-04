@@ -269,3 +269,251 @@ column.filterParam!.options = res.options
 
 - `optUserName` — 操作人名称（后端统一字段）
 - `optDate` — 操作时间，int64 时间戳，列宽优先用 **215**
+
+---
+
+## 报表页面模式
+
+报表页面分为两种：**固定列报表**（有分页）和**动态列报表**（无分页，后端返回 `head` 定义表头）。两种都放在 `src/views/report/` 目录下，路由在 `src/router/module/report.ts`。
+
+### 固定列报表（带分页 + 合计行）
+
+适用场景：列结构固定、后端返回 `{ records, total }` 分页数据的报表。参照 `materialSummary.vue`、`supplierSummary.vue`。
+
+**核心要素**：
+- `Container` + `DataTable` 组件
+- `useTable`（分页）+ `useColumn`（列定义）
+- `queryParams`（reactive）同步筛选条件
+- 月份选择器 + 月末修正 watch
+- 合计行 `footerMethod`
+- 导出按钮调用 `downloadFile`
+
+```vue
+<template>
+  <Container>
+    <DataTable
+      :columns="columns"
+      :tableData="tableData"
+      :total="total"
+      :currentPage="pageNo"
+      :pageSize="pageSize"
+      :loading="loading"
+      :toolbarBtns="toolbarBtns"
+      :show-footer="true"
+      :footer-method="footerMethod"
+      @tableRefresh="handleQueryPage"
+    />
+  </Container>
+</template>
+
+<script setup lang="tsx">
+import { ref, reactive, watch, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import useTable from '@/hooks/useTable'
+import useColumn from '@/hooks/useColumn'
+import { downloadFile, formatMoney } from '@/utils'
+
+const startTime = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime())
+const endTime = ref(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999).getTime())
+
+// month picker 返回当月第一天，结束月份需修正为当月最后一天
+watch(endTime, (val) => {
+  const d = new Date(val)
+  if (d.getDate() === 1) {
+    endTime.value = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999).getTime()
+  }
+})
+
+const queryParams = reactive<Record<string, any>>({})
+
+// 列定义：金额类字段用 formatMoney formatter + summary: true 开启合计
+const { columns } = useColumn([
+  { type: 'seq', title: '序号', width: 60 },
+  { field: 'field1', title: '列1', minWidth: 200 },
+  { field: 'money', title: '金额', width: 150, attrs: { precision: 2 }, summary: true,
+    formatter: ({ cellValue }: any) => formatMoney(cellValue) },
+])
+
+const { tableData, total, pageNo, pageSize, loading, handleQueryPage: originalHandleQueryPage, sum } = useTable({
+  url: ref('/report/xxx'),
+  params: queryParams,
+})
+
+// 筛选条件同步
+watch([startTime, endTime], () => {
+  queryParams.startTime = startTime.value
+  queryParams.endTime = endTime.value
+}, { immediate: true })
+
+onMounted(() => {
+  handleQueryPage(1, pageSize.value, [], [])
+})
+
+// 合计行：有 seq 列时"合计"放 seq 列位置，否则放 index 0
+const footerMethod = () => {
+  const s = sum.value as any
+  if (!s || Object.keys(s).length === 0) return []
+  return [columns.value.map(col => {
+    if (col.field === 'money') return formatMoney(s.money)
+    if (col.type === 'seq') return '合计'
+    return ''
+  })]
+}
+
+const validateQuery = () => {
+  if (!startTime.value || !endTime.value) {
+    ElMessage.warning('请选择月份区间')
+    return false
+  }
+  if (startTime.value > endTime.value) {
+    ElMessage.warning('开始月份不能大于结束月份')
+    return false
+  }
+  return true
+}
+
+const handleQueryPage = (currentPage: number, size: number, querys: QueryDO[], sorts: SortDO[]) => {
+  if (!validateQuery()) return
+  originalHandleQueryPage(currentPage, size, querys, sorts)
+}
+
+// JSX toolbar：月份选择器 + 查询 + 导出
+const toolbarBtns = () => [
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <el-date-picker v-model={startTime.value} type="month" size="small" style="width:140px;"
+      value-format="x" placeholder="开始月份" />
+    <span>至</span>
+    <el-date-picker v-model={endTime.value} type="month" size="small" style="width:140px;"
+      value-format="x" placeholder="结束月份" />
+    <el-button type="primary" size="small"
+      onClick={() => { if (validateQuery()) handleQueryPage(1, pageSize.value, [], []) }}>查询</el-button>
+    <el-button type="warning" size="small"
+      onClick={() => downloadFile('/report/exportXxx', '报表名.xlsx', 'post', {
+        startTime: startTime.value,
+        endTime: endTime.value,
+      })}>导出</el-button>
+  </div>,
+]
+</script>
+```
+
+### 动态多级表头报表（不分页）
+
+适用场景：列结构由后端 `head` 数组动态决定、返回全量数据（不分页）的报表。参照 `deptMaterialOutSummary.vue`、`progressOverview.vue`。
+
+**核心要素**：
+- `usePage: false`（返回全量数组）
+- 后端 `head` 数组递归构建 vxe-table 多级表头（`children`）
+- `sum` 对象递归构建合计行
+- 刷新按钮绑定自定义 `loadData`（需重建表头 + 更新数据）
+
+```vue
+<script setup lang="tsx">
+import { ref, reactive } from 'vue'
+
+const params = reactive({ startTime: startTime.value, endTime: endTime.value })
+
+const {
+  tableData, loading, handleQueryPage, sum: sumData,
+} = useTable({
+  url: ref('/report/deptMaterialOutSummary'),
+  params,
+  usePage: false,
+})
+
+const columns = ref<any[]>([])
+const dynamicHead = ref<any[]>([])
+
+// 加载数据：请求 + 重建表头 + 赋值
+const loadData = () => {
+  params.startTime = startTime.value
+  params.endTime = endTime.value
+  handleQueryPage(1, 9999, [], []).then((res: any) => {
+    dynamicHead.value = res.head || []
+    buildColumns(res.head || [])
+    tableData.value = res.data || []
+  })
+}
+
+// 递归构建多级列
+const buildColumns = (head: any[]) => {
+  const walkTree = (items: any[]): any[] => {
+    return items.map((item: any) => {
+      if (item.child && item.child.length > 0) {
+        return { title: item.name, align: 'center', children: walkTree(item.child) }
+      }
+      return {
+        field: item.id,
+        title: item.name,
+        width: item.id === 'deptCode' ? 160 : 100,
+        align: 'center',
+        formatter: item.id !== 'deptCode' ? ({ cellValue }: any) => {
+          if (cellValue === null || cellValue === undefined) return ''
+          const num = Number(cellValue)
+          return isNaN(num) ? cellValue : num.toFixed(2)
+        } : undefined,
+      }
+    })
+  }
+  columns.value = walkTree(head)
+}
+
+// 合计行：递归匹配 sum 对象的动态字段
+const footerMethod = () => {
+  const sum = sumData.value as any
+  if (!sum || Object.keys(sum).length === 0) return []
+
+  const buildFooterRow = (items: any[]): any[] => {
+    return items.map((item: any) => {
+      if (item.child && item.child.length > 0) return buildFooterRow(item.child)
+      if (item.id === 'deptCode') return '合计'
+      const val = sum[item.id]
+      return val != null ? formatMoney(Number(val)) : ''
+    })
+  }
+
+  return [buildFooterRow(dynamicHead.value).flat(Infinity) as any[]]
+}
+
+const toolbarBtns = () => [
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <el-date-picker v-model={startTime.value} type="month" size="small" style="width:140px;"
+      value-format="x" placeholder="开始月份" />
+    <span>至</span>
+    <el-date-picker v-model={endTime.value} type="month" size="small" style="width:140px;"
+      value-format="x" placeholder="结束月份" />
+    <el-button type="primary" size="small" onClick={() => { if (validateQuery()) loadData() }}>查询</el-button>
+    <el-button type="warning" size="small"
+      onClick={() => downloadFile('/report/exportXxx', '报表名.xlsx', 'post', {
+        startTime: startTime.value, endTime: endTime.value,
+      })}>导出</el-button>
+  </div>,
+]
+
+loadData()
+</script>
+```
+
+**模板注意**：
+```html
+<!-- 不分页报表必须绑定 @tableRefresh="loadData"，否则刷新按钮无效 -->
+<DataTable
+  rowId="deptCode"
+  :columns="columns"
+  :tableData="tableData"
+  :loading="loading"
+  :toolbarBtns="toolbarBtns"
+  :show-footer="true"
+  :footer-method="footerMethod"
+  @tableRefresh="loadData"
+/>
+```
+
+**关键差异**：
+| 项目 | 固定列报表 | 动态列报表 |
+|------|----------|-----------|
+| `usePage` | `true`（默认） | `false` |
+| 数据来源 | `res.data.records` | `res.data`（全量数组） |
+| 列定义 | `useColumn([...])` 静态声明 | `buildColumns(head)` 动态构建 |
+| 合计行 | 按固定字段取 `sum.xxx` | 递归遍历 `head` 取 `sum[item.id]` |
+| 刷新事件 | `@tableRefresh="handleQueryPage"` | `@tableRefresh="loadData"`（需重建表头） |
