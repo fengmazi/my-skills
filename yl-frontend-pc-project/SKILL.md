@@ -33,11 +33,17 @@ metadata:
 
 ### 迁移后缀说明
 
-模块在项目间迁移时，因与原项目代码耦合度高，连带公共代码一起迁入，用后缀区分来源。**迁移链**：南泥湾 → 宝塔 (`-nnw`) → 靖边 (`-bt`)。
+模块在项目间迁移时，因与原项目代码耦合度高，连带公共代码一起迁入，用后缀区分来源。这个约定适用于 **所有目录类型**：`hooks/`、`components/common/`、`enums/`、`utils/` 等。
+
+**通用规则**：
+- 无后缀（`hooks/`、`components/common/`、`enums/`、`utils/`）→ 项目**原有**代码
+- 带后缀（`hooks-xxx/`、`components/common-xxx/`、`enums-xxx/`、`utils-xxx/`）→ 从其他项目**迁入**的代码，后缀标识来源
+
+**迁移链**：南泥湾 → 宝塔 (`-nnw`) → 靖边 (`-bt`)。
 
 | 后缀 | 来源项目 | 见于项目 | 示例目录 |
 |------|---------|---------|---------|
-| `-nnw` | 南泥湾成本管控 | 宝塔预算 | `hooks-nnw/`、`components/common-nnw/` |
+| `-nnw` | 南泥湾成本管控 | 宝塔预算 | `hooks-nnw/`、`components/common-nnw/`、`enums-nnw/`、`utils-nnw/` |
 | `-bt` | 宝塔预算 | 靖边预结算 | `hooks-bt/`、`components/common-bt/`、`enums-bt/` |
 
 **注册顺序**：全局注册时先注册迁入版本再注册原始版本，保证覆盖。如靖边项目 `main.ts` 中先注册 `common-bt` 组件，再注册 `common` 组件。

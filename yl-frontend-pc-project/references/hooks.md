@@ -1,6 +1,6 @@
 # 核心 Hooks
 
-> **目录命名约定**：`hooks/` 是项目**原本的** hooks；`hooks-nnw/`（南泥湾）、`hooks-bt/`（宝塔）是从其他项目**迁移进来**的 hooks，因与原项目耦合度高连带迁入。`enums/`、`components/` 等同理。详见 SKILL.md 中"迁移后缀说明"。
+> **目录命名约定**：无后缀目录（`hooks/`、`components/common/`、`enums/`、`utils/`）是项目**原本的**代码。带后缀的（`hooks-nnw/`、`hooks-bt/`、`components/common-nnw/`、`enums-nnw/`、`utils-nnw/` 等）是从其他项目**迁入**的代码，因与原项目耦合度高连带迁入，后缀标识来源（`nnw`=南泥湾、`bt`=宝塔等，具体后缀因项目而异）。详见 SKILL.md 中"迁移后缀说明"。
 
 ## useTable
 
