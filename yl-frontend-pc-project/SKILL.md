@@ -145,3 +145,4 @@ Vue 3 + Vite 5 / 4 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
 | `references/textarea-display.md` | 多行文本原样显示（white-space: pre-wrap）的使用场景 |
 | `references/startup-config.md` | 启动项配置模板：scripts、.env 文件、vite.config.ts / vue.config.js |
 | `references/print-module.md` | 打印模块架构：目录结构、三段式模板、分页流程、新增单据步骤 |
+| `references/copy-record.md` | 整单复制/表头复制：DetailDialog 插槽按钮、copyRecord 模式、适配要点 |

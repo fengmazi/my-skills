@@ -276,16 +276,52 @@ getDoc({ type: 'dept' }).then(res => {
 
 ## useDetail
 
-审批详情查看。
+审批详情查看。两个版本：`hooks/useDetail` 和 `hooks-nnw/useDetail`，API 有差异。
+
+### hooks/ 版本
 
 ```ts
 const {
-  detailVisible,   // Ref<boolean>
-  detailData,      // Ref<T | null>
-  openDetail,      // (row: T) => void
-  closeDetail,     // () => void
+  handleShowDetail,    // (id, code, title?, onlyCustomFooter?) => void
+  handleShowPrint,     // (id, code) => void  打印预览
+  handleClose,         // () => void          关闭弹窗
+  DetailDialog,        // 详情弹窗组件（el-dialog）
+  DetailPageDialog,    // 详情弹窗组件（PageDialog）
 } = useDetail()
 ```
+
+**DetailDialog 和 DetailPageDialog 都支持默认插槽**，传入的内容渲染在弹窗 footer/header 区域。常用于添加自定义按钮（如整单复制、表头复制）：
+
+```html
+<DetailDialog :dialogAttr="{ width: '1200px' }">
+  <el-button type="primary" @click="copyRecord('all')">整单复制</el-button>
+  <el-button type="primary" @click="copyRecord('head')">表头复制</el-button>
+</DetailDialog>
+```
+
+**`onlyCustomFooter` 参数**：第 4 参为 `true` 时隐藏默认的"确定"按钮，只显示插槽内容。用于完全自定义 footer。
+
+### hooks-nnw/ 版本
+
+```ts
+const {
+  handleShowDetail,    // (id, code, title?, show?, width?) => void
+  handleShowPrint,     // (id, code) => void
+  handleDialogClose,   // () => void          关闭弹窗（含 activeName 重置）
+  renderDetailDialog,  // 详情弹窗组件（el-dialog）
+  DetailDialog,        // 详情弹窗组件（PageDialog）
+} = useDetail()
+```
+
+**renderDetailDialog 支持默认插槽**，内容渲染在 footer 区域。`DetailDialog` 支持默认插槽，内容渲染在 header 区域。
+
+**`show` 参数**：第 4 参控制 `showSlot`，为 `true` 时才渲染插槽内容（隐藏默认关闭按钮）。
+
+**`width` 参数**：第 5 参设置弹窗宽度，默认 `'1200px'`。
+
+### 常见模式：详情弹窗加复制按钮
+
+详见 `references/copy-record.md`。
 
 ---
 
