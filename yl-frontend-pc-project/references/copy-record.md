@@ -18,7 +18,9 @@
 
 ### 1. 模板：在 DetailDialog 内放按钮
 
-**hooks/ 版本**（`DetailDialog` 基于 `el-dialog`，按钮走 `footer` 插槽）：
+> 说明：`renderDetailDialog` 是 hooks-nnw（从南泥湾迁入）的 useDetail 返回的；`DetailDialog` 是 hooks/（项目原有）的 useDetail 返回的。
+
+**项目原有 hooks/ 版本**（`DetailDialog` 基于 `el-dialog`，按钮走 `footer` 插槽）：
 
 ```html
 <DetailDialog :dialogAttr="{ width: '1200px' }">
@@ -27,7 +29,7 @@
 </DetailDialog>
 ```
 
-**hooks-nnw/ 版本**（`renderDetailDialog` 基于 `el-dialog`，按钮走 `footer` 插槽）：
+**hooks-nnw/（从南泥湾迁入）版本**（`renderDetailDialog` 基于 `el-dialog`，按钮走 `footer` 插槽）：
 
 ```html
 <renderDetailDialog>
@@ -39,10 +41,10 @@
 ### 2. 解构 useDetail 时取出 close 方法
 
 ```ts
-// hooks/ 版本
+// hooks/ 版本（项目原有）
 const { handleShowDetail, handleClose, DetailDialog } = useDetail()
 
-// hooks-nnw/ 版本
+// hooks-nnw/ 版本（从南泥湾迁入）
 const { handleShowDetail, handleDialogClose, renderDetailDialog } = useDetail()
 ```
 
@@ -184,9 +186,9 @@ if (type !== 'head') {
 
 `Object.keys(formData).forEach(key => formData[key] = ...)` 在 strict 模式下会报 TS7053。fix：`(formData as any)[key]`。
 
-## 与 hooks-nnw/ 版本差异
+## hooks-nnw（迁入版）与 hooks（原有）的 useDetail 差异
 
-hooks-nnw 的 `useDetail` 功能更强但 API 不同：
+hooks-nnw 是从南泥湾成本管控项目迁入，其 useDetail 与项目原有 hooks 的 useDetail API 不同：
 
 | 差异点 | hooks-nnw/useDetail | hooks/useDetail |
 |--------|-------------------|----------------|

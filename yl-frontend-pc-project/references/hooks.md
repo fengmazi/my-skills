@@ -1,5 +1,7 @@
 # 核心 Hooks
 
+> **目录命名约定**：`hooks/` 是项目**原本的** hooks；`hooks-nnw/`（南泥湾）、`hooks-bt/`（宝塔）是从其他项目**迁移进来**的 hooks，因与原项目耦合度高连带迁入。`enums/`、`components/` 等同理。详见 SKILL.md 中"迁移后缀说明"。
+
 ## useTable
 
 分页表格数据管理。封装了请求、分页、排序、筛选状态。
@@ -276,9 +278,11 @@ getDoc({ type: 'dept' }).then(res => {
 
 ## useDetail
 
-审批详情查看。两个版本：`hooks/useDetail` 和 `hooks-nnw/useDetail`，API 有差异。
+审批详情查看。
 
-### hooks/ 版本
+> `hooks-nnw/useDetail` 是从南泥湾项目迁移过来的版本（源项目：`costcontrol-admin-container`），`hooks/useDetail` 是本项目原有版本。API 有差异，见下。
+
+### hooks/（项目原有）
 
 ```ts
 const {
@@ -301,7 +305,7 @@ const {
 
 **`onlyCustomFooter` 参数**：第 4 参为 `true` 时隐藏默认的"确定"按钮，只显示插槽内容。用于完全自定义 footer。
 
-### hooks-nnw/ 版本
+### hooks-nnw/（从南泥湾迁入）
 
 ```ts
 const {
