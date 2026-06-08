@@ -27,6 +27,7 @@
 | `select` | 下拉选择 | `placeholder`, `clearable`, 数据格式 `{ label, value }` |
 | `select-v2` | 下拉选择 v2 | 同 select，性能更好 |
 | `treeSelect` | 树形选择 | `checkStrictly`, `clearable`, 需配置 `props={{ disabled, children }}` |
+| `treeSelectCheck` | 树形复选框选择（带全选/全不选） | `searchable`, 自带 `multiple` + `show-checkbox` + `checkStrictly` |
 | `date` | 日期选择 | `type: 'date'/'daterange'/'datetime'`, `value-format: 'x'` (毫秒), `format: 'YYYY-MM-DD'` |
 | `textarea` | 多行文本 | `rows`, `maxlength`, `showWordLimit` |
 | `upload` | 文件上传 | `accept`, `limit`, `allowExt`, `fileSize`, `tip` |
@@ -43,7 +44,55 @@
 
 ## 各类型关键细节
 
-### treeSelect 禁用项处理
+### treeSelectCheck 全选/全不选
+
+`treeSelectCheck` 是对 `treeSelect` 的增强版，专用于数据权限等需要"勾选父级自动联动全选所有子级"的场景。
+
+**已内置**：`multiple`、`show-checkbox`、`check-strictly={true}`、`filterable`、`clearable`。
+**自定义插槽**：父级节点右侧显示"全选/全不选"按钮，点击后递归勾选/取消所有子孙节点，并通过 `nextTick` + `getCheckedKeys()` 同步 v-model。
+
+**用法示例**（用户管理数据权限弹窗）：
+
+```ts
+const perFormConfig = ref([
+  [{
+    type: 'treeSelect',
+    prop: 'deptIds',
+    name: '部门',
+    options: [],
+    attrs: { multiple: true, searchable: true, flat: true },
+  }],
+  [{
+    type: 'treeSelectCheck',
+    prop: 'categoryIds',
+    name: '存货分类',
+    options: [],
+    attrs: { searchable: true },
+  }],
+] as FormItem[][])
+```
+
+**实现位置**：`src/components/common/FormItem.vue` 的 `treeSelectCheck` case，约 40 行代码，包含 `handleToggle` 递归逻辑和 `el-tree-select` 的自定义 `default` 插槽。
+
+**依赖的全局样式**（`src/assets/styles/style.scss`）：
+
+```scss
+.custom-tree-node {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  .label { flex: 1; }
+  .btn {
+    font-size: 0.7rem;
+    opacity: 0.3;
+    user-select: none;
+  }
+  &:hover .btn { opacity: 0.8; }
+}
+```
+
+
 
 需配置 `props` 才能正确识别 `disabled` 字段：
 
