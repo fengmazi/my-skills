@@ -127,13 +127,156 @@ http.post('/api/revocation', {
 
 ### 批量操作
 
+项目中有两种批量操作模式，按场景选用：
+
+---
+
+#### 模式一：从已加载数据中勾选（常规批量）
+
+适用于操作列已有批量按钮、用户从当前表格勾选行后直接提交的场景。
+
 ```ts
 http.post('/api/batch', {
   ids: selectedRows.map(r => r.id)
 }).then(() => {
   ElMessage.success('提交成功')
+  dataTableRef.value?.clearCheckbox()  // 清除勾选
   handleTableRefresh()
 })
+```
+
+---
+
+#### 模式二：进入批量模式 → 自动请求符合条件的全部数据（筛选后批量）
+
+**适用场景**：用户点击"批量审批"等按钮后，需要自动筛选出符合批量操作条件的数据（如所有 `approveStatus === 'submit'` 的记录），而不是让用户手动筛选表格后再勾选。
+
+**核心思路**：点击批量按钮时，向 `queryList` 注入过滤条件并重新请求表格数据，使表格仅展示符合批量条件的数据；用户勾选后确认提交；取消或完成后移除过滤条件恢复原始数据。
+
+**参考实现**：`vehicle-admin/src/views/archive/vehicle.vue`（批量审批）
+
+##### 1. 状态管理
+
+```ts
+// 批量模式开关
+const batchApproveVisible = ref(false)
+
+// 批量确认弹窗开关（如需填写审批意见等额外信息）
+const batchApproveDialogVisible = ref(false)
+const batchApproveForm = reactive({
+  approveStatus: 'pass' as 'pass' | 'reject',
+  comment: '',
+})
+
+// 表格选中数据
+let tableSelected: any[] = []
+```
+
+##### 2. 进入批量模式（工具栏按钮）
+
+```tsx
+const toolbarBtns = () => [
+  batchApproveVisible.value ? (
+    <>
+      <el-button type="success" size="small" onClick={() => handleBatchApproveBtn()}>
+        确认批量审批
+      </el-button>
+      <el-button size="small" onClick={() => {
+        // 取消：移除过滤条件，恢复原始数据
+        batchApproveVisible.value = false
+        queryList.value = [...queryList.value.filter(
+          (q: any) => q.property !== 'approveStatus'
+        )]
+        handleQueryPage(pageNo.value, pageSize.value, queryList.value, [])
+      }}>
+        取消
+      </el-button>
+    </>
+  ) : (
+    <el-button
+      type="success"
+      size="small"
+      onClick={() => {
+        // 进入批量模式：注入过滤条件，重新请求只含符合条件的数据
+        batchApproveVisible.value = true
+        queryList.value = [...queryList.value.filter(
+          (q: any) => q.property !== 'approveStatus'
+        )]
+        queryList.value.push({
+          property: 'approveStatus',
+          value: 'submit',
+          operator: 'EQUAL',
+        })
+        handleQueryPage(pageNo.value, pageSize.value, queryList.value, [])
+      }}
+    >
+      批量审批
+    </el-button>
+  ),
+]
+```
+
+**关键点**：
+- 进入批量模式前先移除旧的同名字段过滤条件，避免重复
+- 注入过滤条件后调用 `handleQueryPage`，表格自动刷新为只含符合批量条件的数据
+- 取消时同样移除过滤条件并重新请求，恢复原始表格
+
+##### 3. 确认提交
+
+```ts
+// 按钮点击 → 打开确认弹窗
+const handleBatchApproveBtn = () => {
+  if (!tableSelected.length) return ElMessage.warning('请至少选择一条记录')
+  batchApproveDialogVisible.value = true
+}
+
+// 弹窗确认 → 调接口
+const handleBatchApprove = () => {
+  if (!tableSelected.length) return ElMessage.warning('请至少选择一条记录')
+  http.post('/docVehicle/check', {
+    ids: tableSelected.map((item: any) => item.vehicleId),
+    approveStatus: batchApproveForm.approveStatus,
+    comment: batchApproveForm.comment,
+  }).then((res: any) => {
+    ElMessage.success(res.message || '批量审批成功')
+    // 清理状态
+    batchApproveDialogVisible.value = false
+    batchApproveVisible.value = false
+    batchApproveForm.approveStatus = 'pass'
+    batchApproveForm.comment = ''
+    tableSelected = []
+    // 移除过滤条件，恢复原始数据
+    queryList.value = [...queryList.value.filter(
+      (q: any) => q.property !== 'approveStatus'
+    )]
+    handleQueryPage(pageNo.value, pageSize.value, queryList.value, [])
+  })
+}
+```
+
+##### 4. DataTable 配置
+
+```vue
+<DataTable
+  rowId="vehicleId"
+  :columns="columns"
+  :tableData="tableData"
+  :toolbarBtns="toolbarBtns"
+  :checkboxConfig="{ checkMethod }"
+  @checkboxAll="checkboxChange"
+  @checkboxChange="checkboxChange"
+/>
+```
+
+**流程总结**：
+
+```
+点击"批量审批" → 注入过滤条件 → 表格刷新（只显示符合条件的）
+    ↓
+用户勾选行 → 点击"确认批量审批" → 弹窗 → 调接口
+    ↓
+成功 → 清除过滤条件 → 恢复原始表格
+失败/取消 → 同样清除过滤条件 → 恢复原始表格
 ```
 
 ### 文件下载

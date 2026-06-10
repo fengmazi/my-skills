@@ -142,3 +142,19 @@ pnpm dev:onlineTest
 ```
 
 **打包后清理**：`build-prod` 和 `deploy` 完成后会自动删除本地 `dist` 目录，避免残留旧构建产物。
+
+## 长上下文工具调用失败问题
+
+**现象**：Claude Code 在长时间对话后，工具调用（Bash/Edit/Write等）持续失败，报 `required parameter is missing`。查看工具调用 XML 发现 `<invoke name="Bash"></invoke>` 参数子节点为空。
+
+**原因**：上下文超长时，模型输出 token 预算被压缩，工具调用 XML 的参数部分被截断。
+
+**表现规律**：
+- 偶有成功（如简单 `echo test123`），但大部分失败
+- 与 thinking 块长度无直接关系
+- Read/Bash/Edit/Write/Agent 等所有工具均受影响
+- 重启会话后恢复
+
+**解决**：开新会话继续。当前进度通过衔接说明传给新会话。
+
+**预防**：长期任务拆分为多个子会话，避免单个会话上下文过长。
