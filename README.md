@@ -10,4 +10,4 @@
 
 ---
 
-> 引领导项目 skills（yl-frontend-pc-project-*）已迁移至 [yl-skills](https://github.com/fengmazi/yl-skills)。
+> 引领项目 skills（yl-frontend-pc-project-*）已迁移至 [yl-skills](https://github.com/fengmazi/yl-skills)。

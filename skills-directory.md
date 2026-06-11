@@ -10,4 +10,4 @@
 
 ---
 
-> 引领导项目 skills 已迁移至独立仓库 [yl-skills](https://github.com/fengmazi/yl-skills)。
+> 引领项目 skills 已迁移至独立仓库 [yl-skills](https://github.com/fengmazi/yl-skills)。
