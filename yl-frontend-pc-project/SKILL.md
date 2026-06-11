@@ -147,6 +147,7 @@ Vue 3 + Vite 5 / 4 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
 | `references/utilities.md` | 工具函数：treeDataToKeyValue、calculateFormula、downloadFile、formatMoney 等 |
 | `references/dual-system.md` | 双系统共存：common 与 common-xxx 的目录结构、对照表、注册顺序 |
 | `references/edittable-scroll.md` | EditTable 横向滚动条跳回问题的原因与修复 |
+| `references/pagination-checkbox-reserve.md` | SelectDialog/DialogTable 翻页多选勾选丢失：根因、修复方案、影响分析 |
 | `references/selectdialog-groupkey.md` | SelectDialog 按字段分组勾选（groupKey）的用法与实现 |
 | `references/textarea-display.md` | 多行文本原样显示（white-space: pre-wrap）的使用场景 |
 | `references/startup-config.md` | 启动项配置模板：scripts、.env 文件、vite.config.ts / vue.config.js |
