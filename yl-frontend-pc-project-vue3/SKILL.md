@@ -1,17 +1,21 @@
 ---
-name: yl-frontend-pc-project
-description: 引领 PC 前端项目开发规范。当修改或新增 PC 端页面、组件、hooks、启动配置时使用。
+name: yl-frontend-pc-project-vue3
+description: 引领 PC 前端 Vue 3 项目开发规范。当修改或新增 Vue 3 PC 端页面、组件、hooks、启动配置时使用。适用于 Vue 3 + Vite + Element Plus + vxe-table + Pinia + TypeScript 技术栈。
 metadata:
-  version: "2026.6.2"
+  version: "2026.6.10"
 ---
 
-# 引领 PC 前端项目
+# 引领 PC 前端项目 — Vue 3
+
+> 本 Skill 是 yl-frontend-pc-project 系列中 **Vue 3 专用**篇。
+> 跨版本通用内容（API 格式、权限理念、枚举双轨制理念、工具函数、部署流程）已抽入 `yl-frontend-pc-project-shared` skill，
+> 本 Skill 聚焦 Vue 3 特化实现。
 
 ## 适用范围
 
-本 Skill 适用于所有**引领 (yinling) PC 前端项目**。判断一个项目是否适用，看是否同时满足：
+本 Skill 适用于所有**引领 (yinling) Vue 3 PC 前端项目**。判断一个项目是否适用，看是否同时满足：
 
-1. 技术栈：Vue 3 + Element Plus + vxe-table + Pinia + TypeScript
+1. 技术栈：Vue 3 + Element Plus + vxe-table + Pinia + TypeScript + Vite
 2. 架构特征：配置驱动 UI（`FormItem[][]` + `Column[]`）、Hook 组合式开发（`useTable → useFormConfig → useCurd → useDetail/useOperate`）
 3. 目录特征：存在 `hooks-bt/`、`hooks/` 或 `components/common-bt/`、`components/common/` 等目录
 
@@ -132,24 +136,21 @@ Vue 3 + Vite 5 / 4 + Element Plus + vxe-table + Pinia + ECharts + TypeScript
 
 ## 参考文档
 
-开发时按需查阅：
+开发时按需查阅。**跨版本通用内容**（API 格式、权限理念、枚举体系理念、工具函数、部署流程）请查阅 `yl-frontend-pc-project-shared` skill。
 
 | 文档 | 内容 |
 |------|------|
-| `references/architecture.md` | 核心架构原则：配置驱动 UI、Hook 组合式开发、JSX 渲染、枚举双轨制 |
-| `references/components.md` | 核心组件 API：DataTable、Form、DialogForm、CurdDialog、EditTable、SelectDialog、OptDialog 等 |
+| `references/architecture.md` | Vue 3 架构：配置驱动 UI、Hook 组合式开发、TSX 三种渲染模式、枚举双轨制实现 |
+| `references/components.md` | 核心组件 API：DataTable（vxe-grid）、Form、DialogForm、CurdDialog、EditTable、SelectDialog、OptDialog 等 |
 | `references/hooks.md` | 核心 Hooks 用法：useTable、useCurd、useFormConfig、useEnum、useDoc、useOperate 等 |
 | `references/page-template.md` | 页面开发模板：列表页脚手架、审批页附加层、文件命名约定、filterParam 类型 |
-| `references/api-patterns.md` | API 请求模式：分页参数格式、操作符表、CRUD/审批/批量/导出惯用写法 |
-| `references/auth.md` | 权限与状态：checkAuth 权限码规则、useAppStore、路由守卫模式 |
-| `references/enums-detail.md` | 枚举体系：静态枚举自动加载（Map/Option/tagTypeMap）、动态枚举、使用惯式 |
-| `references/form-items.md` | 表单配置详解：完整 FormItem type 列表、各类型常用 attrs、动态配置 |
-| `references/utilities.md` | 工具函数：treeDataToKeyValue、calculateFormula、downloadFile、formatMoney 等 |
+| `references/form-items.md` | 表单配置详解：Element Plus FormItem 完整 type 列表、各类型常用 attrs、动态配置 |
+| `references/auth-detail.md` | Pinia 权限实现：checkAuth 权限码规则、useAppStore 关键属性/方法、路由守卫模式 |
+| `references/enums-detail.md` | 枚举实现：静态枚举自动 glob 加载（Map/Option/tagTypeMap）、动态枚举 useEnum、使用惯式 |
+| `references/startup-config.md` | 启动项配置模板：Vite scripts、.env 文件（VITE_APP_*）、vite.config.ts、deploy.js、zip.cjs |
 | `references/dual-system.md` | 双系统共存：common 与 common-xxx 的目录结构、对照表、注册顺序 |
 | `references/edittable-scroll.md` | EditTable 横向滚动条跳回问题的原因与修复 |
 | `references/pagination-checkbox-reserve.md` | SelectDialog/DialogTable 翻页多选勾选丢失：根因、修复方案、影响分析 |
 | `references/selectdialog-groupkey.md` | SelectDialog 按字段分组勾选（groupKey）的用法与实现 |
-| `references/textarea-display.md` | 多行文本原样显示（white-space: pre-wrap）的使用场景 |
-| `references/startup-config.md` | 启动项配置模板：scripts、.env 文件、vite.config.ts / vue.config.js |
 | `references/print-module.md` | 打印模块架构：目录结构、三段式模板、分页流程、新增单据步骤 |
 | `references/copy-record.md` | 整单复制/表头复制：DetailDialog 插槽按钮、copyRecord 模式、适配要点 |
