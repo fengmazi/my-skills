@@ -7,6 +7,7 @@
 | 技能 | 说明 |
 |------|------|
 | `my-frontend-skills` | 个人前端开发笔记，包含环境配置与踩坑记录 |
+| `tun-fake-ip-diagnose` | TUN/fake-ip 网络诊断：DNS 劫持、ping 假通、路由表排查 |
 
 ---
 
